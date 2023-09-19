@@ -3,7 +3,7 @@
 
 if (Test-Path -PathType Container $dir){
     Write-Host "Es un directorio"
-    ls $dir
+    Get-ChildItem $dir
 } else {
     Write-Host "No es un directorio valido o  no existe"
 }
