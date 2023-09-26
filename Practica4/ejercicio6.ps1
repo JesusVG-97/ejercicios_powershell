@@ -1,4 +1,4 @@
-﻿[int] $random = Get-Random -Minimum 1 -Maximum 5
+﻿[int] $random = Get-Random -Minimum 1 -Maximum 100
 
 [int] $num = Read-Host "Introduce un numero a adivinar"
 
