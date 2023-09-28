@@ -1,7 +1,8 @@
-﻿[int] $numasteriscos = Read-Host "Introduce un numero para hacer un triangulo"
+﻿[int] $num = Read-Host "Introduce un numero para hacer un triangulo"
 $fila_anterior = ""
+$numtotal = $num*2
 
-for ($i = 1; $i -le $numasteriscos; $i++) {
+for ($i = 1; $i -le $numtotal; $i++) {
 #inicializando la variable $row como un arreglo vacío. 
    $row = @() 
    for ($j = $i; $j -gt 0; $j--) {
