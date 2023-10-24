@@ -16,7 +16,28 @@ foreach ($departamento in $departamentos) {
     Revoke-SmbShareAccess -Name $departamento -AccountName "Todos" -Force
 
 }
+  
+# Permisos NTFS de los departamentos
+foreach ($departamento in $departamentos) {
 
+    $acl = Get-Acl -Path C:\Empresa\$departamento
 
-    
+    # Deshabilitar la herencia y eliminar TODAS las reglas de acceso
+    $acl.SetAccessRuleProtection($true, $false)
+
+    $permisos = 'Administradores','FullControl','ContainerInherit, ObjectInherit','None','Allow'
+    $ace = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $permisos
+    $acl.SetAccessRule($ace)
+
+    $permisos = "$departamento",'Modify','ContainerInherit, ObjectInherit','None','Allow'
+    $ace = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $permisos
+    $acl.SetAccessRule($ace)
+
+    $permisos = 'Usuarios del dominio','Read','ContainerInherit, ObjectInherit','None','Allow'
+    $ace = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $permisos
+    $acl.SetAccessRule($ace)
+   
+    Set-Acl -Path C:\Empresa\$departamento -AclObject $acl
+
+}
 
