@@ -1,23 +1,50 @@
-ï»¿Import-Module ActiveDirectory
+#Importamos active directory y empleados.csv
+Import-Module ActiveDirectory
+$empleados = Import-Csv C:\Users\Administrador\Desktop\empleados.csv -delimiter ";"
 
-# Crear la carpeta principal y compartirla de forma oculta
-New-Item -Path "C:\Empresa.users" -ItemType Directory
-New-SmbShare -Path "C:\Empresa.users" -Name "Empresa.users$" -Description "Carpeta compartida oculta para usuarios" -ScopeName "*" -FullAccess "Administradores"
 
-$empleados = Import-Csv "C:\Users\Administrador\Desktop\empleados.csv" -Delimiter ";"
+#Creamos la carpeta Empresa users y la compartimos en oculto
+New-Item -Path C:\Empresa_users -ItemType Directory
+New-SmbShare -Name Empresa_users$ -Path C:\Empresa_users -FullAccess "Usuarios del dominio"
+
+#Recorremos la variable empleados y vamos creando las carpetas de los usuarios
 
 foreach ($e in $empleados) {
-    $nombre = $e.nombre
-    $apellido = $e.apellido
-    $usuario = "$nombre.$apellido"
-    $ruta = "C:\Empresa.users\$usuario"
-
-    # Crear la carpeta personal del usuario
-    New-Item -Path $ruta -ItemType Directory
-
-    # Compartir la carpeta personal con Control Total para el usuario propietario
-    New-SmbShare -Path $ruta -Name "$usuario$" -Description "Carpeta personal de $usuario" -ScopeName "*" -FullAccess $usuario
+    $name = $e.nombre
+    $subname = $e.apellido
+    $user = "$name.$subname"
+    $path = "C:\Empresa_users\$user"
+    
+    New-Item -Path $path -ItemType Directory
 }
 
-# Revocar el acceso a "Todos" en la carpeta principal "Empresa.users"
-Revoke-SmbShareAccess -Name "Empresa.users$" -AccountName "Todos" -Force
+
+#Recorremos la variable empleados para añadir los permisos NTFS
+foreach ($e in $empleados) {
+    $name = $e.nombre
+    $subname = $e.apellido
+    $user = "$name.$subname"
+
+    $acl = Get-Acl -Path C:\Empresa_users\$user
+    # Deshabilitar la herencia y eliminar todas las reglas de acceso
+    $acl.SetAccessRuleProtection($true,$false)
+
+    #Le damos permisos de control total a administradores
+    $permisos = 'Administradores','FullControl','ContainerInherit,ObjectInherit','None','Allow'
+    $ace = New-Object System.Security.AccessControl.FileSystemAccessRule -ArgumentList $permisos
+    $acl.SetAccessRule($ace)
+
+    #Le damos permisos de control total a los usuarios en sus propias carpetas
+    $permisos = "$user",'FullControl','ContainerInherit,ObjectInherit','None','Allow'
+    $ace = New-Object System.Security.AccessControl.FileSystemAccessRule -ArgumentList $permisos
+    $acl | Format-Table
+    Set-Acl -AclObject $acl -Path C:\Empresa_users\$user
+}
+
+#Recorremos el foreach para establecer el home directory en la Z: de cada usuario
+foreach ($e in $empleados) {
+    $name = $e.nombre
+    $subname = $e.apellido
+    $user = "$name.$subname"
+    Set-ADUser -Identity "$user" -ScriptPath "carpeta$($e.departamento).bat" -HomeDrive "Z:" -HomeDirectory "\\empresa-DC1\Empresa_users$\$user"
+}
